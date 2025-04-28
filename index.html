@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Fake News Detector</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #4a6fa5;
+            --secondary-color: #166088;
+            --accent-color: #4fc3f7;
+            --real-color: #43a047;
+            --fake-color: #e53935;
+            --bg-color: #f9fbfd;
+            --card-bg: #ffffff;
+            --text-color: #333333;
+            --border-radius: 12px;
+            --box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1);
+            --transition: all 0.3s ease;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            padding: 0;
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .container {
+            width: 90%;
+            max-width: 1000px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+
+        header {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            width: 100%;
+            padding: 2rem 0;
+            text-align: center;
+            box-shadow: var(--box-shadow);
+            margin-bottom: 2rem;
+        }
+
+        .header-content {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
+
+        .subtitle {
+            font-weight: 300;
+            opacity: 0.9;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: var(--border-radius);
+            padding: 2rem;
+            box-shadow: var(--box-shadow);
+            margin-bottom: 2rem;
+            transition: var(--transition);
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+        }
+
+        .input-section {
+            margin-bottom: 1.5rem;
+        }
+
+        .card-title {
+            color: var(--secondary-color);
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            font-size: 1.5rem;
+        }
+
+        .card-title i {
+            margin-right: 0.75rem;
+            color: var(--accent-color);
+        }
+
+        textarea {
+            width: 100%;
+            height: 180px;
+            padding: 1rem;
+            border: 2px solid #e0e0e0;
+            border-radius: var(--border-radius);
+            font-size: 1rem;
+            transition: var(--transition);
+            font-family: inherit;
+            resize: vertical;
+            margin-bottom: 1rem;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.06);
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 3px rgba(79, 195, 247, 0.2);
+        }
+
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .select-wrapper {
+            position: relative;
+            flex-grow: 1;
+            max-width: 300px;
+        }
+
+        .select-wrapper::after {
+            content: '\f107';
+            font-family: 'Font Awesome 6 Free';
+            font-weight: 900;
+            position: absolute;
+            top: 50%;
+            right: 15px;
+            transform: translateY(-50%);
+            pointer-events: none;
+            color: var(--primary-color);
+        }
+
+        select {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border: 2px solid #e0e0e0;
+            border-radius: var(--border-radius);
+            font-size: 1rem;
+            appearance: none;
+            background-color: white;
+            color: var(--text-color);
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        select:focus {
+            outline: none;
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 3px rgba(79, 195, 247, 0.2);
+        }
+
+        button {
+            padding: 0.75rem 2rem;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            border: none;
+            border-radius: var(--border-radius);
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        #result {
+            opacity: 0;
+            height: 0;
+            overflow: hidden;
+            transition: var(--transition);
+        }
+
+        #result.active {
+            opacity: 1;
+            height: auto;
+            padding: 1.5rem;
+            margin-top: 1.5rem;
+            border-radius: var(--border-radius);
+            border-left: 5px solid var(--accent-color);
+            background-color: rgba(79, 195, 247, 0.1);
+        }
+
+        #result.real {
+            border-left-color: var(--real-color);
+            background-color: rgba(67, 160, 71, 0.1);
+        }
+
+        #result.fake {
+            border-left-color: var(--fake-color);
+            background-color: rgba(229, 57, 53, 0.1);
+        }
+
+        .result-title {
+            display: flex;
+            align-items: center;
+            margin-bottom: 1rem;
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+
+        .result-title i {
+            margin-right: 0.75rem;
+            font-size: 1.8rem;
+        }
+
+        .result-title.real {
+            color: var(--real-color);
+        }
+
+        .result-title.fake {
+            color: var(--fake-color);
+        }
+
+        .probability-bars {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .probability-bar {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .bar-label {
+            display: flex;
+            justify-content: space-between;
+            font-weight: 600;
+        }
+
+        .bar-container {
+            height: 10px;
+            background-color: #e0e0e0;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+
+        .bar {
+            height: 100%;
+            transition: width 1s ease-out;
+        }
+
+        .bar.fake {
+            background-color: var(--fake-color);
+        }
+
+        .bar.real {
+            background-color: var(--real-color);
+        }
+
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+            color: var(--secondary-color);
+        }
+
+        .loading i {
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .info-text {
+            color: #666;
+            font-size: 0.9rem;
+            margin-top: 1rem;
+            display: flex;
+            align-items: center;
+        }
+
+        .info-text i {
+            margin-right: 0.5rem;
+            color: var(--accent-color);
+        }
+
+        footer {
+            margin-top: auto;
+            width: 100%;
+            background-color: #f1f1f1;
+            padding: 1.5rem 0;
+            text-align: center;
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                width: 95%;
+            }
+
+            header {
+                padding: 1.5rem 0;
+            }
+
+            h1 {
+                font-size: 2rem;
+            }
+
+            .card {
+                padding: 1.5rem;
+            }
+
+            .controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .select-wrapper {
+                max-width: 100%;
+            }
+
+            button {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <div class="header-content">
+            <h1><i class="fas fa-shield-alt"></i> Fake News Detector</h1>
+            <p class="subtitle">Advanced AI-powered tool to help identify potentially misleading information</p>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="card">
+            <h2 class="card-title"><i class="fas fa-newspaper"></i>News Analyzer</h2>
+            <div class="input-section">
+                <textarea id="newsText"
+                    placeholder="Paste news article or headline here to analyze its credibility..."></textarea>
+
+                <div class="controls">
+                    <div class="select-wrapper">
+                        <select id="modelSelect">
+                            <option value="distilbert">Lightweight Model (DistilBERT Sentiment)</option>
+                            <option value="fakenews">Pretrained Fake News Detector (Tiny BERT)</option>
+                            <option value="baseline">Baseline Model (Logistic Regression)</option>
+                            <!-- <option value="bert">Advanced Model (BERT Fine-Tuned)</option> -->
+                            <!-- <option value="xgb">XGBoost Model</option> -->
+                        </select>                        
+                    </div>
+                    <button id="predictBtn"><i class="fas fa-search"></i> Analyze Content</button>
+                </div>
+
+                <p class="info-text">
+                    <i class="fas fa-info-circle"></i>
+                    Choose between our baseline classifier or advanced BERT model for more nuanced analysis.
+                </p>
+            </div>
+
+            <div id="result"></div>
+        </div>
+    </div>
+
+    <footer>
+        <div class="container">
+            <p>© 2025 Fake News Detection System. This tool provides guidance only and should not be the sole basis for
+                determining credibility.</p>
+        </div>
+    </footer>
+
+    <script>
+        document.getElementById('predictBtn').addEventListener('click', () => {
+            const text = document.getElementById('newsText').value.trim();
+            const model = document.getElementById('modelSelect').value;
+            const resultDiv = document.getElementById('result');
+        
+            if (!text) {
+                resultDiv.className = 'active';
+                resultDiv.innerHTML = `
+                  <div style="color: #e53935; display: flex; align-items: center; gap: 0.5rem;">
+                    <i class="fas fa-exclamation-circle"></i>
+                    <span>Please enter some text to analyze.</span>
+                  </div>`;
+                return;
+            }
+        
+            // Show loading state
+            resultDiv.className = 'active';
+            resultDiv.innerHTML = `
+              <div class="loading">
+                <i class="fas fa-circle-notch fa-spin"></i>
+                <span>Analyzing content...</span>
+              </div>`;
+        
+            // Map models to endpoints
+            const modelEndpoints = {
+                'baseline': 'http://127.0.0.1:5000/predict_baseline',
+                'bert': 'http://127.0.0.1:5000/predict_bert',
+                'xgb': 'http://127.0.0.1:5000/predict_xgb',
+                'distilbert': 'http://127.0.0.1:5000/predict_distilbert',
+                'fakenews': 'http://127.0.0.1:5000/predict_fakenews'
+            };
+        
+            const modelNames = {
+                'baseline': 'Baseline',
+                'bert': 'BERT',
+                'xgb': 'XGBoost',
+                'distilbert': 'DistilBERT',
+                'fakenews': 'Fake News BERT'
+            };
+        
+            const endpoint = modelEndpoints[model] || '';
+        
+            if (!endpoint) {
+                console.error('Invalid model selected.');
+                return;
+            }
+        
+            fetch(endpoint, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text })
+            })
+            .then(response => {
+                if (!response.ok) throw new Error('Network response was not ok');
+                return response.json();
+            })
+            .then(data => {
+                const { label, probabilities } = data;
+                const fakeProb = probabilities[0];
+                const realProb = probabilities[1];
+        
+                const resultClass = label === 'FAKE' ? 'fake' : 'real';
+                const icon = label === 'FAKE' ? 'fa-triangle-exclamation' : 'fa-circle-check';
+        
+                resultDiv.className = `active ${resultClass}`;
+                resultDiv.innerHTML = `
+                  <div class="result-title ${resultClass}">
+                    <i class="fas ${icon}"></i>
+                    <span>Prediction: ${label}</span>
+                  </div>
+                  
+                  <p>Our ${modelNames[model]} model has analyzed this content and determined:</p>
+                  
+                  <div class="probability-bars">
+                    <div class="probability-bar">
+                      <div class="bar-label">
+                        <span>Fake News Probability</span>
+                        <span>${(fakeProb * 100).toFixed(1)}%</span>
+                      </div>
+                      <div class="bar-container">
+                        <div class="bar fake" style="width: ${fakeProb * 100}%"></div>
+                      </div>
+                    </div>
+                    
+                    <div class="probability-bar">
+                      <div class="bar-label">
+                        <span>Real News Probability</span>
+                        <span>${(realProb * 100).toFixed(1)}%</span>
+                      </div>
+                      <div class="bar-container">
+                        <div class="bar real" style="width: ${realProb * 100}%"></div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <p class="info-text">
+                    <i class="fas fa-info-circle"></i>
+                    ${label === 'FAKE'
+                        ? 'This content shows patterns consistent with potentially misleading information.'
+                        : 'This content appears to be more consistent with factual reporting.'}
+                  </p>
+                `;
+            })
+            .catch(err => {
+                console.error(err);
+                resultDiv.innerHTML = `
+                  <div style="color: #e53935; display: flex; align-items: center; gap: 0.5rem;">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <span>Error during analysis. Please try again later.</span>
+                  </div>`;
+            });
+        });
+        </script>        
+
+</body>
+
+</html>
