@@ -29,6 +29,9 @@ import torch
 import torch.nn.functional as F
 from transformers import AutoTokenizer, AutoModelForSequenceClassification, pipeline
 from flask_cors import CORS
+import anthropic
+import json
+import os
 
 app = Flask(__name__)
 CORS(app)
@@ -71,6 +74,18 @@ try:
 except Exception as e:
     fake_news_pipeline = None
     app.logger.warning(f"Could not load Fake News Detection model: {e}")
+
+# Initialize Claude client if API key is available
+claude_client = None
+try:
+    api_key = os.environ.get("ANTHROPIC_API_KEY", "")
+    if api_key:
+        claude_client = anthropic.Anthropic(api_key=api_key)
+        app.logger.info("Initialized Claude API client")
+    else:
+        app.logger.warning("No ANTHROPIC_API_KEY found in environment variables")
+except Exception as e:
+    app.logger.warning(f"Could not initialize Claude API client: {e}")
 
 # Prepare NLP tools for baseline preprocessing
 nltk.download('stopwords')
@@ -159,6 +174,95 @@ def predict_fakenews():
         probabilities = [1 - score, score]
 
     return jsonify({'label': label, 'probabilities': probabilities})
+
+@app.route('/predict_claude', methods=['POST'])
+def predict_claude():
+    """Run fake news detection using Claude API."""
+    if claude_client is None:
+        return jsonify({'error': 'Claude API client not initialized. Make sure ANTHROPIC_API_KEY is set.'}), 500
+    
+    payload = request.get_json(force=True)
+    news_text = payload.get('text', '')
+    
+    if not news_text:
+        return jsonify({'error': 'No text provided'}), 400
+    
+    # Build prompt for Claude
+    prompt = f"""
+    You are an expert in detecting fake news. Please analyze the following news article and determine if it's REAL or FAKE news. 
+    Respond ONLY with a valid JSON object in the following structure with no additional text before or after:
+    {{
+        "label": "REAL" or "FAKE",
+        "confidence": <float between 0 and 1>,
+        "explanation": "<brief explanation of your reasoning>"
+    }}
+
+    News article to analyze:
+    ```
+    {news_text}
+    ```
+    
+    Remember: ONLY return the JSON object and nothing else.
+    """
+    
+    try:
+        # Call Claude API with Claude 3 Opus model
+        response = claude_client.messages.create(
+            model="claude-3-opus-20240229",
+            max_tokens=1024,
+            temperature=0.0,  # Use deterministic responses for consistent results
+            system="You are an expert system for detecting fake news. Your task is to determine if the provided content is real or fake news. Analyze the text carefully for signs of misinformation, sensationalism, factual inconsistencies, or propaganda techniques. Return ONLY a valid JSON object with no preceding or following text.",
+            messages=[
+                {"role": "user", "content": prompt}
+            ]
+        )
+        
+        # Extract the response content
+        content = response.content[0].text
+        
+        # Try to extract JSON from the response if there's any surrounding text
+        try:
+            # First try direct parsing
+            result = json.loads(content)
+        except json.JSONDecodeError:
+            # If direct parsing fails, try to extract JSON using regex
+            import re
+            json_match = re.search(r'({[\s\S]*})', content)
+            if json_match:
+                try:
+                    result = json.loads(json_match.group(1))
+                except json.JSONDecodeError:
+                    app.logger.error(f"Failed to extract valid JSON from Claude response: {content}")
+                    return jsonify({
+                        'error': 'Failed to parse Claude response',
+                        'raw_response': content
+                    }), 500
+            else:
+                app.logger.error(f"No JSON object found in Claude response: {content}")
+                return jsonify({
+                    'error': 'No JSON found in Claude response',
+                    'raw_response': content
+                }), 500
+        
+        # Format response to match other endpoints
+        label = result.get('label', 'UNKNOWN')
+        confidence = result.get('confidence', 0.5)
+        explanation = result.get('explanation', '')
+        
+        # Format probabilities to match other endpoints
+        # [fake_probability, real_probability]
+        probabilities = [1-confidence, confidence] if label == 'REAL' else [confidence, 1-confidence]
+        
+        return jsonify({
+            'label': label,
+            'probabilities': probabilities,
+            'explanation': explanation,
+            'model': 'claude-3-7-sonnet-20250219'
+        })
+            
+    except Exception as e:
+        app.logger.error(f"Error calling Claude API: {str(e)}")
+        return jsonify({'error': f'Error calling Claude API: {str(e)}'}), 500
 
 # @app.route('/predict_bert', methods=['POST'])
 # def predict_bert():

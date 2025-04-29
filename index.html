@@ -380,10 +380,11 @@
                     <div class="select-wrapper">
                         <select id="modelSelect">
                             <option value="distilbert">Lightweight Model (DistilBERT Sentiment)</option>
-                            <option value="fakenews">Pretrained Fake News Detector (Tiny BERT)</option>
                             <option value="baseline">Baseline Model (Logistic Regression)</option>
                             <!-- <option value="bert">Advanced Model (BERT Fine-Tuned)</option> -->
-                            <!-- <option value="xgb">XGBoost Model</option> -->
+                            <!-- <option value="fakenews">Pretrained Fake News Detector (Tiny BERT)</option> -->
+                            <option value="xgb">XGBoost Model</option>
+                            <option value="claude">Claude 3.7 Sonnet</option>
                         </select>                        
                     </div>
                     <button id="predictBtn"><i class="fas fa-search"></i> Analyze Content</button>
@@ -436,7 +437,8 @@
                 'bert': 'http://127.0.0.1:5000/predict_bert',
                 'xgb': 'http://127.0.0.1:5000/predict_xgb',
                 'distilbert': 'http://127.0.0.1:5000/predict_distilbert',
-                'fakenews': 'http://127.0.0.1:5000/predict_fakenews'
+                'fakenews': 'http://127.0.0.1:5000/predict_fakenews',
+                'claude': 'http://127.0.0.1:5000/predict_claude'
             };
         
             const modelNames = {
@@ -444,7 +446,8 @@
                 'bert': 'BERT',
                 'xgb': 'XGBoost',
                 'distilbert': 'DistilBERT',
-                'fakenews': 'Fake News BERT'
+                'fakenews': 'Fake News BERT',
+                'claude': 'Claude 3.7 Sonnet'
             };
         
             const endpoint = modelEndpoints[model] || '';
